@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🦾 Prosthetic Hand Gesture Controller | Mohammad Khalaf</title>
+  <meta name="description" content="Real-time hand tracking simulation demonstrating neuroprosthetic principles using MediaPipe and computer vision.">
+  <meta name="author" content="Mohammad Khalaf">
+  <meta name="keywords" content="prosthetic, hand tracking, MediaPipe, biomedical engineering, neuroprosthetics, gesture recognition">
+  
+  <!-- Open Graph for LinkedIn/Social Sharing -->
+  <meta property="og:title" content="Prosthetic Hand Gesture Controller">
+  <meta property="og:description" content="Real-time hand tracking simulation for neuroprosthetics. Try it with your webcam!">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://i.imgur.com/prosthetic-demo.png">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Prosthetic Hand Gesture Controller">
+  <meta name="twitter:description" content="Real-time hand tracking simulation for neuroprosthetics.">
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦾</text></svg>">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4">
+  
+  <!-- Header -->
+  <div class="max-w-4xl mx-auto mb-6">
+    <h1 class="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+      🦾 Prosthetic Hand Gesture Controller
+    </h1>
+    <p class="text-gray-400 text-center">Real-time hand tracking simulation for neuroprosthetics</p>
+  </div>
+
+  <!-- Main Container -->
+  <div class="max-w-4xl mx-auto">
+    
+    <!-- Video Container -->
+    <div class="relative bg-gray-800 rounded-2xl overflow-hidden shadow-2xl mb-6">
+      <video id="video" class="hidden" playsinline></video>
+      <canvas id="canvas" width="640" height="480" class="w-full h-auto bg-gray-900"></canvas>
+      
+      <!-- Overlay when camera is off -->
+      <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90">
+        <div class="text-8xl mb-6">🤖</div>
+        <p class="text-gray-400 mb-6 text-lg">Click "Start Camera" to begin</p>
+        <div id="loading" class="flex items-center gap-2 text-blue-400">
+          <div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          Loading MediaPipe...
+        </div>
+      </div>
+
+      <!-- Gesture Display -->
+      <div id="gestureBox" class="hidden absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-xl px-5 py-3">
+        <p class="text-xs text-gray-400 mb-1">Detected Gesture</p>
+        <p id="gestureText" class="text-2xl font-bold text-cyan-400">No hand detected</p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex flex-wrap gap-4 justify-center mb-8">
+      <button id="startBtn" onclick="startCamera()" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-blue-500/25">
+        🎥 Start Camera
+      </button>
+      <button id="stopBtn" onclick="stopCamera()" class="hidden px-8 py-4 bg-red-600 hover:bg-red-500 rounded-xl font-semibold text-lg transition-all">
+        ⏹️ Stop Camera
+      </button>
+      <button id="modeBtn" onclick="toggleMode()" class="px-8 py-4 bg-gray-700 hover:bg-gray-600 rounded-xl font-semibold text-lg transition-all">
+        🦴 Skeleton Mode
+      </button>
+    </div>
+
+    <!-- Gesture Guide -->
+    <div class="bg-gray-800 rounded-xl p-6">
+      <h3 class="text-lg font-semibold text-gray-300 mb-4">Supported Gestures</h3>
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">✊</span>
+          <p class="text-gray-400 mt-2">Fist</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">🖐️</span>
+          <p class="text-gray-400 mt-2">Open Palm</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">👆</span>
+          <p class="text-gray-400 mt-2">Point</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">✌️</span>
+          <p class="text-gray-400 mt-2">Peace</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">👍</span>
+          <p class="text-gray-400 mt-2">Thumbs Up</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-xl p-4 hover:bg-gray-700 transition-colors">
+          <span class="text-4xl">🤏</span>
+          <p class="text-gray-400 mt-2">Pinch</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-gray-500 text-sm mt-6">
+      Built with MediaPipe Hand Tracking • 
+      <a href="https://www.linkedin.com/in/mohammad-khalaf-b80273261" target="_blank" class="text-blue-400 hover:text-blue-300">Mohammad Khalaf</a> • 
+      <a href="https://github.com/mohammadkhalaf/prosthetic-hand-controller" target="_blank" class="text-blue-400 hover:text-blue-300">GitHub</a>
+    </p>
+  </div>
+
+  <!-- How It Works Section -->
+  <div class="max-w-4xl mx-auto mt-8 mb-8">
+    <div class="bg-gray-800 rounded-xl p-6">
+      <h3 class="text-lg font-semibold text-gray-300 mb-4">🧠 How It Works</h3>
+      <div class="grid md:grid-cols-3 gap-4 text-sm text-gray-400">
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <p class="text-cyan-400 font-semibold mb-2">1. Signal Acquisition</p>
+          <p>Camera captures hand movements, similar to how EMG sensors read muscle signals in real prosthetics.</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <p class="text-cyan-400 font-semibold mb-2">2. AI Processing</p>
+          <p>MediaPipe's ML model tracks 21 hand landmarks in real-time, replacing electrode arrays.</p>
+        </div>
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <p class="text-cyan-400 font-semibold mb-2">3. Motor Response</p>
+          <p>Gesture algorithms translate signals into actions, mimicking prosthetic motor control.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const loading = document.getElementById('loading');
+    const gestureBox = document.getElementById('gestureBox');
+    const gestureText = document.getElementById('gestureText');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const modeBtn = document.getElementById('modeBtn');
+
+    // State
+    let hands = null;
+    let camera = null;
+    let handMode = 'prosthetic';
+    let isRunning = false;
+
+    // Connections for drawing hand
+    const connections = [
+      [0, 1], [1, 2], [2, 3], [3, 4],
+      [0, 5], [5, 6], [6, 7], [7, 8],
+      [0, 9], [9, 10], [10, 11], [11, 12],
+      [0, 13], [13, 14], [14, 15], [15, 16],
+      [0, 17], [17, 18], [18, 19], [19, 20],
+      [5, 9], [9, 13], [13, 17]
+    ];
+
+    // Initialize MediaPipe Hands
+    function initHands() {
+      hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults(onResults);
+      loading.classList.add('hidden');
+    }
+
+    // Detect gesture from landmarks
+    function detectGesture(landmarks) {
+      if (!landmarks) return 'No hand detected';
+
+      const fingerTips = [8, 12, 16, 20];
+      const fingerPIPs = [6, 10, 14, 18];
+      const thumbTip = 4;
+      const thumbIP = 3;
+      const wrist = 0;
+
+      const fingersExtended = fingerTips.map((tip, i) => landmarks[tip].y < landmarks[fingerPIPs[i]].y);
+      
+      // Detect if left or right hand based on thumb position relative to pinky
+      const isRightHand = landmarks[thumbTip].x < landmarks[20].x;
+      
+      // Thumb detection works differently for left vs right hand
+      const thumbExtended = isRightHand 
+        ? landmarks[thumbTip].x < landmarks[thumbIP].x
+        : landmarks[thumbTip].x > landmarks[thumbIP].x;
+      
+      const extendedCount = fingersExtended.filter(Boolean).length + (thumbExtended ? 1 : 0);
+
+      if (extendedCount === 0) return '✊ Fist';
+      if (extendedCount === 5) return '🖐️ Open Palm';
+      if (fingersExtended[0] && !fingersExtended[1] && !fingersExtended[2] && !fingersExtended[3]) return '👆 Pointing';
+      if (fingersExtended[0] && fingersExtended[1] && !fingersExtended[2] && !fingersExtended[3]) return '✌️ Peace';
+      if (thumbExtended && !fingersExtended[0] && !fingersExtended[1] && !fingersExtended[2] && !fingersExtended[3]) return '👍 Thumbs Up';
+      
+      const thumbToIndex = Math.sqrt(
+        Math.pow(landmarks[thumbTip].x - landmarks[8].x, 2) +
+        Math.pow(landmarks[thumbTip].y - landmarks[8].y, 2)
+      );
+      if (thumbToIndex < 0.05) return '🤏 Pinch';
+
+      return `${extendedCount} fingers`;
+    }
+
+    // Draw hand on canvas
+    function drawHand(landmarks, width, height) {
+      const mirrorX = (x) => width - (x * width);
+      const getY = (y) => y * height;
+
+      if (handMode === 'prosthetic') {
+        // Draw metallic prosthetic style
+        connections.forEach(([i, j]) => {
+          const gradient = ctx.createLinearGradient(
+            mirrorX(landmarks[i].x), getY(landmarks[i].y),
+            mirrorX(landmarks[j].x), getY(landmarks[j].y)
+          );
+          gradient.addColorStop(0, '#4a5568');
+          gradient.addColorStop(0.5, '#a0aec0');
+          gradient.addColorStop(1, '#4a5568');
+          
+          ctx.beginPath();
+          ctx.moveTo(mirrorX(landmarks[i].x), getY(landmarks[i].y));
+          ctx.lineTo(mirrorX(landmarks[j].x), getY(landmarks[j].y));
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 8;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.moveTo(mirrorX(landmarks[i].x), getY(landmarks[i].y));
+          ctx.lineTo(mirrorX(landmarks[j].x), getY(landmarks[j].y));
+          ctx.strokeStyle = '#2d3748';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        });
+
+        // Draw glowing joints
+        landmarks.forEach((lm) => {
+          const x = mirrorX(lm.x);
+          const y = getY(lm.y);
+          
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, Math.PI * 2);
+          const gradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+          gradient.addColorStop(0, '#63b3ed');
+          gradient.addColorStop(0.7, '#3182ce');
+          gradient.addColorStop(1, '#2c5282');
+          ctx.fillStyle = gradient;
+          ctx.fill();
+          
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#bee3f8';
+          ctx.fill();
+        });
+
+      } else {
+        // Draw skeleton style
+        connections.forEach(([i, j]) => {
+          ctx.beginPath();
+          ctx.moveTo(mirrorX(landmarks[i].x), getY(landmarks[i].y));
+          ctx.lineTo(mirrorX(landmarks[j].x), getY(landmarks[j].y));
+          ctx.strokeStyle = '#48bb78';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        });
+
+        landmarks.forEach((lm) => {
+          ctx.beginPath();
+          ctx.arc(mirrorX(lm.x), getY(lm.y), 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#68d391';
+          ctx.fill();
+          ctx.strokeStyle = '#276749';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      }
+    }
+
+    // Handle MediaPipe results
+    function onResults(results) {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Mirror and draw video
+      ctx.scale(-1, 1);
+      ctx.translate(-canvas.width, 0);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        gestureText.textContent = detectGesture(landmarks);
+        drawHand(landmarks, canvas.width, canvas.height);
+      } else {
+        gestureText.textContent = 'No hand detected';
+      }
+    }
+
+    // Start camera
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' }
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+
+        if (!hands) initHands();
+
+        camera = new Camera(video, {
+          onFrame: async () => {
+            if (hands && isRunning) {
+              await hands.send({ image: video });
+            }
+          },
+          width: 640,
+          height: 480
+        });
+        
+        isRunning = true;
+        camera.start();
+
+        overlay.classList.add('hidden');
+        gestureBox.classList.remove('hidden');
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+
+      } catch (err) {
+        alert('Camera access denied. Please allow camera permissions and refresh.');
+        console.error(err);
+      }
+    }
+
+    // Stop camera
+    function stopCamera() {
+      isRunning = false;
+      
+      if (camera) {
+        camera.stop();
+      }
+      
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      overlay.classList.remove('hidden');
+      gestureBox.classList.add('hidden');
+      startBtn.classList.remove('hidden');
+      stopBtn.classList.add('hidden');
+    }
+
+    // Toggle hand mode
+    function toggleMode() {
+      if (handMode === 'prosthetic') {
+        handMode = 'skeleton';
+        modeBtn.textContent = '🦾 Prosthetic Mode';
+      } else {
+        handMode = 'prosthetic';
+        modeBtn.textContent = '🦴 Skeleton Mode';
+      }
+    }
+
+    // Initialize on load
+    window.onload = () => {
+      initHands();
+    };
+  </script>
+</body>
+</html>
